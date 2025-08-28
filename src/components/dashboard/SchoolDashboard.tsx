@@ -1,12 +1,16 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "sonner";
-import { Users, Plus, FileSpreadsheet, Edit, Trash2 } from "lucide-react";
-import { StudentForm } from "@/components/students/StudentForm";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import * as XLSX from "xlsx";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StudentForm } from "@/components/students/StudentForm";
+import { StatsCard } from "@/components/ui/stats-card";
+import { LoadingState } from "@/components/ui/loading-spinner";
+import { EmptyState } from "@/components/ui/empty-state";
+import { toast } from "sonner";
+import { Users, Plus, Edit, Trash2, Download, Eye, FileSpreadsheet, Camera, GraduationCap } from "lucide-react";
+import * as XLSX from 'xlsx';
 
 interface SchoolDashboardProps {
   userProfile: any;
@@ -86,47 +90,44 @@ export const SchoolDashboard = ({ userProfile }: SchoolDashboardProps) => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-center">
-          <Users className="h-12 w-12 text-primary mx-auto mb-4 animate-pulse" />
-          <p className="text-muted-foreground">Loading students...</p>
-        </div>
-      </div>
-    );
+    return <LoadingState message="Loading students..." />;
   }
+
+  const studentsWithPhotos = students.filter(s => s.photo_url).length;
+  const uniqueClasses = new Set(students.map(s => s.class));
 
   return (
     <div className="space-y-6">
       {/* School Info */}
-      <Card className="bg-gradient-to-r from-primary/10 via-background to-accent/10 border-primary/20">
+      <Card className="bg-gradient-to-r from-primary/10 via-background to-accent/10 border-primary/20 card-hover">
         <CardHeader>
-          <CardTitle className="text-2xl">Welcome to {userProfile?.school?.name}</CardTitle>
-          <CardDescription className="text-lg">
+          <CardTitle className="text-2xl gradient-text">Welcome to {userProfile?.school?.name}</CardTitle>
+          <p className="text-lg text-muted-foreground">
             {userProfile?.school?.block?.name} Block, {userProfile?.school?.block?.district?.name} District
-          </CardDescription>
+          </p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-card rounded-lg border">
-              <Users className="h-8 w-8 text-primary mx-auto mb-2" />
-              <div className="text-2xl font-bold text-primary">{students.length}</div>
-              <div className="text-sm text-muted-foreground">Total Students</div>
-            </div>
-            <div className="text-center p-4 bg-card rounded-lg border">
-              <FileSpreadsheet className="h-8 w-8 text-accent mx-auto mb-2" />
-              <div className="text-2xl font-bold text-accent">
-                {students.filter(s => s.photo_url).length}
-              </div>
-              <div className="text-sm text-muted-foreground">With Photos</div>
-            </div>
-            <div className="text-center p-4 bg-card rounded-lg border">
-              <Edit className="h-8 w-8 text-success mx-auto mb-2" />
-              <div className="text-2xl font-bold text-success">
-                {new Set(students.map(s => s.class)).size}
-              </div>
-              <div className="text-sm text-muted-foreground">Classes</div>
-            </div>
+            <StatsCard
+              title="Total Students"
+              value={students.length}
+              icon={<Users className="h-4 w-4" />}
+              gradient="from-primary/10 to-primary/20"
+            />
+
+            <StatsCard
+              title="Students with Photos"
+              value={studentsWithPhotos}
+              icon={<Camera className="h-4 w-4" />}
+              gradient="from-success/10 to-success/20"
+            />
+
+            <StatsCard
+              title="Total Classes"
+              value={uniqueClasses.size}
+              icon={<GraduationCap className="h-4 w-4" />}
+              gradient="from-warning/10 to-warning/20"
+            />
           </div>
         </CardContent>
       </Card>
@@ -135,9 +136,9 @@ export const SchoolDashboard = ({ userProfile }: SchoolDashboardProps) => {
       <div className="flex gap-4">
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
           <DialogTrigger asChild>
-            <Button className="flex items-center gap-2 bg-gradient-to-r from-primary to-primary-hover">
-              <Plus className="h-4 w-4" />
-              Add New Student
+            <Button variant="gradient" size="lg" data-add-student>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Student
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -153,55 +154,57 @@ export const SchoolDashboard = ({ userProfile }: SchoolDashboardProps) => {
         </Dialog>
 
         <Button 
-          onClick={exportToExcel} 
-          variant="outline" 
-          className="flex items-center gap-2"
+          onClick={exportToExcel}
+          variant="success"
+          size="lg"
           disabled={students.length === 0}
         >
-          <FileSpreadsheet className="h-4 w-4" />
+          <Download className="h-4 w-4 mr-2" />
           Export to Excel
         </Button>
       </div>
 
       {/* Students List */}
-      <Card>
+      <Card className="card-hover">
         <CardHeader>
           <CardTitle>Students</CardTitle>
-          <CardDescription>
+          <p className="text-muted-foreground">
             Manage student information and ID cards
-          </CardDescription>
+          </p>
         </CardHeader>
         <CardContent>
-          {students.length === 0 ? (
-            <div className="text-center py-12">
-              <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No students yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Start by adding your first student to the system.
-              </p>
-              <Button onClick={() => setShowAddForm(true)} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add First Student
-              </Button>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-3">Photo</th>
-                    <th className="text-left p-3">Student Name</th>
-                    <th className="text-left p-3">SRN No</th>
-                    <th className="text-left p-3">Class</th>
-                    <th className="text-left p-3">Section</th>
-                    <th className="text-left p-3">Date of Birth</th>
-                    <th className="text-left p-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map((student: any) => (
-                    <tr key={student.id} className="border-b hover:bg-muted/50">
-                      <td className="p-3">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Photo</TableHead>
+                  <TableHead>Student Name</TableHead>
+                  <TableHead>SRN No</TableHead>
+                  <TableHead>Class</TableHead>
+                  <TableHead>Section</TableHead>
+                  <TableHead>Date of Birth</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {students.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center">
+                      <EmptyState
+                        icon={<Users className="h-12 w-12" />}
+                        title="No students yet"
+                        description="Get started by adding your first student to begin managing ID cards."
+                        action={{
+                          label: "Add First Student",
+                          onClick: () => setShowAddForm(true)
+                        }}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  students.map((student: any) => (
+                    <TableRow key={student.id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell>
                         <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center overflow-hidden">
                           {student.photo_url ? (
                             <img 
@@ -213,13 +216,13 @@ export const SchoolDashboard = ({ userProfile }: SchoolDashboardProps) => {
                             <Users className="h-6 w-6 text-muted-foreground" />
                           )}
                         </div>
-                      </td>
-                      <td className="p-3 font-medium">{student.student_name}</td>
-                      <td className="p-3 font-mono">{student.srn_no}</td>
-                      <td className="p-3">{student.class}</td>
-                      <td className="p-3">{student.section}</td>
-                      <td className="p-3">{new Date(student.date_of_birth).toLocaleDateString()}</td>
-                      <td className="p-3">
+                      </TableCell>
+                      <TableCell className="font-medium">{student.student_name}</TableCell>
+                      <TableCell className="font-mono">{student.srn_no}</TableCell>
+                      <TableCell>{student.class}</TableCell>
+                      <TableCell>{student.section}</TableCell>
+                      <TableCell>{new Date(student.date_of_birth).toLocaleDateString()}</TableCell>
+                      <TableCell>
                         <div className="flex items-center gap-2">
                           <Dialog>
                             <DialogTrigger asChild>
@@ -248,20 +251,19 @@ export const SchoolDashboard = ({ userProfile }: SchoolDashboardProps) => {
                           
                           <Button 
                             size="sm" 
-                            variant="outline"
+                            variant="destructive"
                             onClick={() => handleDeleteStudent(student.id)}
-                            className="text-destructive hover:text-destructive"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

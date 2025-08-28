@@ -1,13 +1,17 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { StatsCard } from "@/components/ui/stats-card";
+import { LoadingState } from "@/components/ui/loading-spinner";
+import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "sonner";
-import { Search, Users, Building, MapPin, FileSpreadsheet, Plus } from "lucide-react";
-import * as XLSX from "xlsx";
+import { Users, School, Building, MapPin, Search, Download, Filter, X, FileSpreadsheet } from "lucide-react";
+import * as XLSX from 'xlsx';
 
 export const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -31,6 +35,7 @@ export const AdminDashboard = () => {
     totalBlocks: 0,
     totalDistricts: 0
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStates();
@@ -145,6 +150,7 @@ export const AdminDashboard = () => {
   };
 
   const fetchStudents = async () => {
+    setLoading(true);
     let query = supabase
       .from("students")
       .select(`
@@ -186,6 +192,7 @@ export const AdminDashboard = () => {
     } else {
       setStudents(data || []);
     }
+    setLoading(false);
   };
 
   const exportToExcel = () => {
@@ -221,53 +228,45 @@ export const AdminDashboard = () => {
     setSearchTerm("");
   };
 
+  if (loading) {
+    return <LoadingState message="Loading dashboard data..." />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-            <Users className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">{stats.totalStudents}</div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Total Students"
+          value={stats.totalStudents}
+          icon={<Users className="h-4 w-4" />}
+          gradient="from-primary/10 to-primary/20"
+        />
 
-        <Card className="bg-gradient-to-br from-accent/10 to-accent/5 border-accent/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Schools</CardTitle>
-            <Building className="h-4 w-4 text-accent" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-accent">{stats.totalSchools}</div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Total Schools"
+          value={stats.totalSchools}
+          icon={<School className="h-4 w-4" />}
+          gradient="from-accent/10 to-accent/20"
+        />
 
-        <Card className="bg-gradient-to-br from-success/10 to-success/5 border-success/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Blocks</CardTitle>
-            <MapPin className="h-4 w-4 text-success" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">{stats.totalBlocks}</div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Total Blocks"
+          value={stats.totalBlocks}
+          icon={<Building className="h-4 w-4" />}
+          gradient="from-success/10 to-success/20"
+        />
 
-        <Card className="bg-gradient-to-br from-warning/10 to-warning/5 border-warning/20">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Districts</CardTitle>
-            <MapPin className="h-4 w-4 text-warning" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-warning">{stats.totalDistricts}</div>
-          </CardContent>
-        </Card>
+        <StatsCard
+          title="Total Districts"
+          value={stats.totalDistricts}
+          icon={<MapPin className="h-4 w-4" />}
+          gradient="from-warning/10 to-warning/20"
+        />
       </div>
 
       {/* Search and Filters */}
-      <Card>
+      <Card className="card-hover">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Search className="h-5 w-5" />
@@ -280,19 +279,20 @@ export const AdminDashboard = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
             <div className="space-y-2">
-              <Label htmlFor="search">Search by SRN</Label>
+              <label htmlFor="search" className="text-sm font-medium">Search by SRN</label>
               <Input
                 id="search"
                 placeholder="Enter SRN number..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="transition-all focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>State</Label>
+              <label className="text-sm font-medium">State</label>
               <Select value={filters.state} onValueChange={(value) => setFilters(prev => ({ ...prev, state: value, district: "", block: "", school: "" }))}>
-                <SelectTrigger>
+                <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20">
                   <SelectValue placeholder="Select State" />
                 </SelectTrigger>
                 <SelectContent>
@@ -304,9 +304,9 @@ export const AdminDashboard = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>District</Label>
+              <label className="text-sm font-medium">District</label>
               <Select value={filters.district} onValueChange={(value) => setFilters(prev => ({ ...prev, district: value, block: "", school: "" }))} disabled={!filters.state}>
-                <SelectTrigger>
+                <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20">
                   <SelectValue placeholder="Select District" />
                 </SelectTrigger>
                 <SelectContent>
@@ -318,9 +318,9 @@ export const AdminDashboard = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Block</Label>
+              <label className="text-sm font-medium">Block</label>
               <Select value={filters.block} onValueChange={(value) => setFilters(prev => ({ ...prev, block: value, school: "" }))} disabled={!filters.district}>
-                <SelectTrigger>
+                <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20">
                   <SelectValue placeholder="Select Block" />
                 </SelectTrigger>
                 <SelectContent>
@@ -332,9 +332,9 @@ export const AdminDashboard = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>School</Label>
+              <label className="text-sm font-medium">School</label>
               <Select value={filters.school} onValueChange={(value) => setFilters(prev => ({ ...prev, school: value }))} disabled={!filters.block}>
-                <SelectTrigger>
+                <SelectTrigger className="transition-all focus:ring-2 focus:ring-primary/20">
                   <SelectValue placeholder="Select School" />
                 </SelectTrigger>
                 <SelectContent>
@@ -346,30 +346,33 @@ export const AdminDashboard = () => {
             </div>
 
             <div className="space-y-2">
-              <Label>Class</Label>
+              <label className="text-sm font-medium">Class</label>
               <Input
                 placeholder="Enter class..."
                 value={filters.class}
                 onChange={(e) => setFilters(prev => ({ ...prev, class: e.target.value }))}
+                className="transition-all focus:ring-2 focus:ring-primary/20"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Section</Label>
+              <label className="text-sm font-medium">Section</label>
               <Input
                 placeholder="Enter section..."
                 value={filters.section}
                 onChange={(e) => setFilters(prev => ({ ...prev, section: e.target.value }))}
+                className="transition-all focus:ring-2 focus:ring-primary/20"
               />
             </div>
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={clearFilters} variant="outline">
+            <Button onClick={clearFilters} variant="outline" size="lg">
+              <X className="h-4 w-4 mr-2" />
               Clear Filters
             </Button>
-            <Button onClick={exportToExcel} className="flex items-center gap-2">
-              <FileSpreadsheet className="h-4 w-4" />
+            <Button onClick={exportToExcel} variant="gradient" size="lg">
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
               Export to Excel
             </Button>
           </div>
@@ -377,7 +380,7 @@ export const AdminDashboard = () => {
       </Card>
 
       {/* Students Table */}
-      <Card>
+      <Card className="card-hover">
         <CardHeader>
           <CardTitle>Students ({students.length})</CardTitle>
           <CardDescription>
@@ -386,51 +389,57 @@ export const AdminDashboard = () => {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2">Photo</th>
-                  <th className="text-left p-2">Student Name</th>
-                  <th className="text-left p-2">SRN No</th>
-                  <th className="text-left p-2">Class</th>
-                  <th className="text-left p-2">School</th>
-                  <th className="text-left p-2">District</th>
-                  <th className="text-left p-2">DOB</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((student: any) => (
-                  <tr key={student.id} className="border-b hover:bg-muted/50">
-                    <td className="p-2">
-                      <div className="w-10 h-10 bg-muted rounded-md flex items-center justify-center">
-                        {student.photo_url ? (
-                          <img 
-                            src={student.photo_url} 
-                            alt={student.student_name}
-                            className="w-full h-full object-cover rounded-md"
-                          />
-                        ) : (
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-2 font-medium">{student.student_name}</td>
-                    <td className="p-2">{student.srn_no}</td>
-                    <td className="p-2">{student.class}-{student.section}</td>
-                    <td className="p-2">{student.school?.name}</td>
-                    <td className="p-2">{student.school?.block?.district?.name}</td>
-                    <td className="p-2">{new Date(student.date_of_birth).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Photo</TableHead>
+                  <TableHead>Student Name</TableHead>
+                  <TableHead>SRN No</TableHead>
+                  <TableHead>Class</TableHead>
+                  <TableHead>School</TableHead>
+                  <TableHead>District</TableHead>
+                  <TableHead>DOB</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {students.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center">
+                      <EmptyState
+                        icon={<Users className="h-12 w-12" />}
+                        title={searchTerm ? "No students found" : "No students registered"}
+                        description={searchTerm ? "Try adjusting your search criteria." : "Students will appear here once they are registered by schools."}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  students.map((student: any) => (
+                    <TableRow key={student.id} className="hover:bg-muted/50 transition-colors">
+                      <TableCell>
+                        <div className="w-10 h-10 bg-muted rounded-md flex items-center justify-center overflow-hidden">
+                          {student.photo_url ? (
+                            <img 
+                              src={student.photo_url} 
+                              alt={student.student_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">{student.student_name}</TableCell>
+                      <TableCell className="font-mono">{student.srn_no}</TableCell>
+                      <TableCell>{student.class}-{student.section}</TableCell>
+                      <TableCell>{student.school?.name}</TableCell>
+                      <TableCell>{student.school?.block?.district?.name}</TableCell>
+                      <TableCell>{new Date(student.date_of_birth).toLocaleDateString()}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </div>
-          
-          {students.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              No students found matching your criteria
-            </div>
-          )}
         </CardContent>
       </Card>
     </div>
