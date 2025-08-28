@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Upload, Crop, Eye, Save, X } from "lucide-react";
 import Cropper from "react-cropper";
-import "cropperjs/dist/cropper.css";
 
 interface StudentFormProps {
   schoolId: string;
