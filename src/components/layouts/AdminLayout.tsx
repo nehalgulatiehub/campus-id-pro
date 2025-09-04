@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Outlet, useLocation, NavLink } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Outlet, useLocation, NavLink, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { 
@@ -10,8 +10,12 @@ import {
   School, 
   Users, 
   Menu,
-  X
+  X,
+  LogOut
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { LoadingState } from "@/components/ui/loading-spinner";
+import { toast } from "sonner";
 
 interface NavItem {
   title: string;
@@ -54,7 +58,55 @@ const navItems: NavItem[] = [
 
 export const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const location = useLocation();
+
+  useEffect(() => {
+    checkUserRole();
+  }, []);
+
+  const checkUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const { data: profile, error } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user role:', error);
+        toast.error('Error checking permissions');
+        setLoading(false);
+        return;
+      }
+
+      setUserRole(profile?.role || null);
+    } catch (error) {
+      console.error('Error checking user role:', error);
+      toast.error('Error checking permissions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  if (loading) {
+    return <LoadingState message="Checking permissions..." />;
+  }
+
+  if (userRole !== 'admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className="flex h-screen bg-background">
@@ -109,6 +161,18 @@ export const AdminLayout = () => {
               </NavLink>
             ))}
           </nav>
+
+          {/* Logout button */}
+          <div className="p-4 border-t">
+            <Button
+              variant="outline"
+              className="w-full flex items-center gap-2"
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          </div>
         </div>
       </div>
 

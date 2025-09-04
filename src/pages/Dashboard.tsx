@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 import { SchoolDashboard } from "@/components/dashboard/SchoolDashboard";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 const Dashboard = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -11,6 +13,10 @@ const Dashboard = () => {
   useEffect(() => {
     fetchUserProfile();
   }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -65,7 +71,32 @@ const Dashboard = () => {
   if (userProfile?.role === 'admin') {
     return <AdminDashboard />;
   } else if (userProfile?.role === 'school') {
-    return <SchoolDashboard userProfile={userProfile} />;
+    return (
+      <div className="min-h-screen bg-background">
+        {/* School Header */}
+        <div className="border-b bg-card">
+          <div className="flex items-center justify-between p-4">
+            <div>
+              <h1 className="text-xl font-bold">School Dashboard</h1>
+              <p className="text-sm text-muted-foreground">{userProfile?.school?.name}</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          </div>
+        </div>
+        
+        {/* School Dashboard Content */}
+        <div className="p-6">
+          <SchoolDashboard userProfile={userProfile} />
+        </div>
+      </div>
+    );
   } else {
     return (
       <div className="text-center py-12">
