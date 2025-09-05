@@ -84,6 +84,39 @@ export type Database = {
           },
         ]
       }
+      import_logs: {
+        Row: {
+          created_at: string
+          errors: string | null
+          failed_records: number
+          filename: string
+          id: string
+          successful_records: number
+          total_records: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          errors?: string | null
+          failed_records?: number
+          filename: string
+          id?: string
+          successful_records?: number
+          total_records?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          errors?: string | null
+          failed_records?: number
+          filename?: string
+          id?: string
+          successful_records?: number
+          total_records?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       schools: {
         Row: {
           address: string | null
@@ -258,7 +291,7 @@ export type Database = {
       }
     }
     Enums: {
-      user_role: "admin" | "school"
+      user_role: "admin" | "school" | "editor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -386,7 +419,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      user_role: ["admin", "school"],
+      user_role: ["admin", "school", "editor"],
     },
   },
 } as const

@@ -68,7 +68,7 @@ const Dashboard = () => {
     );
   }
 
-  if (userProfile?.role === 'admin') {
+  if (userProfile?.role === 'admin' || userProfile?.role === 'editor') {
     return <AdminDashboard />;
   } else if (userProfile?.role === 'school') {
     return (

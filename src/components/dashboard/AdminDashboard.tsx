@@ -10,8 +10,12 @@ import { StatsCard } from "@/components/ui/stats-card";
 import { LoadingState } from "@/components/ui/loading-spinner";
 import { EmptyState } from "@/components/ui/empty-state";
 import { toast } from "sonner";
-import { Users, School, Building, MapPin, Search, Download, Filter, X, FileSpreadsheet } from "lucide-react";
+import { Users, School, Building, MapPin, Search, Download, Filter, X, FileSpreadsheet, Edit, Plus, UserCog, Upload } from "lucide-react";
 import * as XLSX from 'xlsx';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { StudentForm } from "@/components/students/StudentForm";
+import { UserRoleManagement } from "@/components/admin/UserRoleManagement";
+import { ExcelImport } from "@/components/admin/ExcelImport";
 
 export const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -36,6 +40,10 @@ export const AdminDashboard = () => {
     totalDistricts: 0
   });
   const [loading, setLoading] = useState(true);
+  const [showAddStudentDialog, setShowAddStudentDialog] = useState(false);
+  const [editingStudent, setEditingStudent] = useState(null);
+  const [showUserManagement, setShowUserManagement] = useState(false);
+  const [showExcelImport, setShowExcelImport] = useState(false);
 
   useEffect(() => {
     fetchStates();
@@ -228,6 +236,17 @@ export const AdminDashboard = () => {
     setSearchTerm("");
   };
 
+  const handleStudentSaved = () => {
+    fetchStudents();
+    setShowAddStudentDialog(false);
+    setEditingStudent(null);
+  };
+
+  const handleEditStudent = (student: any) => {
+    setEditingStudent(student);
+    setShowAddStudentDialog(true);
+  };
+
   if (loading) {
     return <LoadingState message="Loading dashboard data..." />;
   }
@@ -366,7 +385,7 @@ export const AdminDashboard = () => {
             </div>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button onClick={clearFilters} variant="outline" size="lg">
               <X className="h-4 w-4 mr-2" />
               Clear Filters
@@ -375,6 +394,69 @@ export const AdminDashboard = () => {
               <FileSpreadsheet className="h-4 w-4 mr-2" />
               Export to Excel
             </Button>
+            
+            <Dialog open={showAddStudentDialog} onOpenChange={(open) => {
+              setShowAddStudentDialog(open);
+              if (!open) setEditingStudent(null);
+            }}>
+              <DialogTrigger asChild>
+                <Button variant="success" size="lg">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Student
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingStudent ? "Edit Student" : "Add New Student"}
+                  </DialogTitle>
+                </DialogHeader>
+                {showAddStudentDialog && (
+                  <StudentForm
+                    schoolId={filters.school || ""}
+                    student={editingStudent}
+                    onSaved={handleStudentSaved}
+                    onCancel={() => setShowAddStudentDialog(false)}
+                  />
+                )}
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={showExcelImport} onOpenChange={setShowExcelImport}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="lg">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import Excel
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Import Students from Excel</DialogTitle>
+                </DialogHeader>
+                <ExcelImport 
+                  schools={schools}
+                  onImportComplete={() => {
+                    fetchStudents();
+                    setShowExcelImport(false);
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={showUserManagement} onOpenChange={setShowUserManagement}>
+              <DialogTrigger asChild>
+                <Button variant="secondary" size="lg">
+                  <UserCog className="h-4 w-4 mr-2" />
+                  Manage Users
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>User Role Management</DialogTitle>
+                </DialogHeader>
+                <UserRoleManagement />
+              </DialogContent>
+            </Dialog>
           </div>
         </CardContent>
       </Card>
@@ -399,12 +481,13 @@ export const AdminDashboard = () => {
                   <TableHead>School</TableHead>
                   <TableHead>District</TableHead>
                   <TableHead>DOB</TableHead>
+                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {students.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center">
+                    <TableCell colSpan={8} className="text-center">
                       <EmptyState
                         icon={<Users className="h-12 w-12" />}
                         title={searchTerm ? "No students found" : "No students registered"}
@@ -434,6 +517,15 @@ export const AdminDashboard = () => {
                       <TableCell>{student.school?.name}</TableCell>
                       <TableCell>{student.school?.block?.district?.name}</TableCell>
                       <TableCell>{new Date(student.date_of_birth).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditStudent(student)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}

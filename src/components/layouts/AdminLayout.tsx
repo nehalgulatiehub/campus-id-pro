@@ -104,7 +104,7 @@ export const AdminLayout = () => {
     return <LoadingState message="Checking permissions..." />;
   }
 
-  if (userRole !== 'admin') {
+  if (userRole !== 'admin' && userRole !== 'editor') {
     return <Navigate to="/dashboard" replace />;
   }
 
